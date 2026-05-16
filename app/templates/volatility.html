@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %} — Volatility{% endblock %}
+{% block content %}
+
+<h1 class="text-2xl font-bold mb-6">SERP Volatility</h1>
+
+{% if volatilities %}
+<div class="space-y-4">
+  {% for v in volatilities %}
+  <div class="bg-gray-900 rounded-xl border border-amber-800/50 p-4">
+    <div class="flex justify-between items-center mb-2">
+      <a href="/keyword/{{ v.keyword | urlencode }}" class="font-semibold text-emerald-400 hover:underline">{{ v.keyword }}</a>
+      <span class="text-xs text-gray-500">{{ v.latest_ts[:10] }}</span>
+    </div>
+    <div class="space-y-1 text-sm">
+      {% for c in v.changes %}
+      <div class="flex items-center gap-2 text-gray-300">
+        <span class="font-mono text-xs">{{ c.domain }}</span>
+        {% if c.type == 'dropped' %}
+        <span class="text-red-400 text-xs">dropped (was #{{ c.from }})</span>
+        {% elif c.type == 'new' %}
+        <span class="text-emerald-400 text-xs">new at #{{ c.to }}</span>
+        {% else %}
+        <span class="text-amber-400 text-xs">#{{ c.from }} → #{{ c.to }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-gray-500 py-12 text-center">No significant volatility detected. ✅</p>
+{% endif %}
+
+<h2 class="text-xl font-bold mt-10 mb-4">Alert History</h2>
+{% if alerts %}
+<div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="text-gray-400 border-b border-gray-800">
+        <th class="text-left py-2">Date</th>
+        <th class="text-left py-2">Type</th>
+        <th class="text-left py-2">Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in alerts %}
+      <tr class="border-b border-gray-800/30">
+        <td class="py-1.5 text-gray-500">{{ a.ts[:10] }}</td>
+        <td class="py-1.5">
+          <span class="text-xs px-1.5 py-0.5 rounded 
+            {% if a.alert_type == 'volatility' %}bg-amber-600/20 text-amber-400
+            {% elif a.alert_type == 'ai_overview' %}bg-purple-600/20 text-purple-400
+            {% elif a.alert_type == 'cannibalization' %}bg-red-600/20 text-red-400
+            {% else %}bg-gray-700 text-gray-300{% endif %}">
+            {{ a.alert_type }}
+          </span>
+        </td>
+        <td class="py-1.5 text-gray-300">{{ a.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-gray-500 text-sm py-6">No alerts generated yet.</p>
+{% endif %}
+
+{% endblock %}

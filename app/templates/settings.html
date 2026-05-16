@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %} — Settings{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-2 gap-6">
+  <div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <h2 class="font-semibold mb-4">Add Keyword</h2>
+      <form action="/settings/keywords/add" method="post" class="space-y-3">
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Keyword</label>
+          <input type="text" name="keyword" required
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Location</label>
+          <input type="text" name="location" value="United States"
+                 class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+        </div>
+        <div>
+          <label class="text-xs text-gray-400 block mb-1">Device</label>
+          <select name="device" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+            <option value="desktop">Desktop</option>
+            <option value="mobile">Mobile</option>
+            <option value="tablet">Tablet</option>
+          </select>
+        </div>
+        <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm transition">Add Keyword</button>
+      </form>
+    </div>
+
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 mt-4">
+      <h2 class="font-semibold mb-3">Configuration</h2>
+      <div class="text-sm space-y-2">
+        <div class="flex justify-between">
+          <span class="text-gray-400">SERP API Key:</span>
+          <span class="{% if serpapi_key_set %}text-emerald-400{% else %}text-red-400{% endif %}">
+            {% if serpapi_key_set %}✓ Set{% else %}✗ Not set (use SERPAPI_KEY env var){% endif %}
+          </span>
+        </div>
+        <div class="flex justify-between">
+          <span class="text-gray-400">Track interval:</span>
+          <span class="text-gray-300">Every 24h (set TRACK_INTERVAL_HOURS env var)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <h2 class="font-semibold mb-4">Tracked Keywords ({{ keywords | length }})</h2>
+      {% if keywords %}
+      <div class="space-y-2">
+        {% for kw in keywords %}
+        <div class="flex items-center justify-between bg-gray-800/50 rounded-lg px-3 py-2">
+          <div>
+            <a href="/keyword/{{ kw.keyword | urlencode }}" class="text-emerald-400 hover:underline text-sm">{{ kw.keyword }}</a>
+            <div class="text-xs text-gray-500">{{ kw.location }} · {{ kw.device }}</div>
+          </div>
+          <form action="/settings/keywords/remove" method="post" onsubmit="return confirm('Remove {{ kw.keyword }} and all its data?')">
+            <input type="hidden" name="keyword" value="{{ kw.keyword }}">
+            <button type="submit" class="text-red-400 hover:text-red-300 text-xs">Remove</button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-500 text-sm py-8 text-center">No keywords yet. Add one on the left.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

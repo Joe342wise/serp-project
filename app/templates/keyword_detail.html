@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %} — {{ keyword.keyword }}{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold">{{ keyword.keyword }}</h1>
+    <p class="text-gray-400 text-sm">{{ keyword.location }} · {{ keyword.device }}</p>
+  </div>
+  <div class="flex gap-2">
+    <button onclick="event.preventDefault(); fetch('/track/{{ keyword.keyword | urlencode }}',{method:'POST'}).then(r=>r.json()).then(()=>location.reload())"
+            class="bg-emerald-600 hover:bg-emerald-500 px-4 py-2 rounded-lg text-sm transition">Track Now</button>
+  </div>
+</div>
+
+{% if volatility and volatility.changes %}
+<div class="bg-amber-900/30 border border-amber-700/50 rounded-xl p-3 mb-6 text-sm">
+  <strong class="text-amber-400">Volatility detected</strong> — comparing {{ volatility.prev_ts[:10] }} vs {{ volatility.latest_ts[:10] }}
+  <ul class="mt-1 text-gray-300">
+  {% for c in volatility.changes[:5] %}
+    <li>• {{ c.domain }}: {{ c.from or '—' }} → {{ c.to or 'dropped' }}</li>
+  {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<div class="grid grid-cols-3 gap-6">
+  <div class="col-span-2">
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <h2 class="font-semibold mb-3">Rank History</h2>
+      <canvas id="rankChart" height="200"></canvas>
+    </div>
+
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 mt-4">
+      <h2 class="font-semibold mb-3">Latest Rankings</h2>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-gray-400 border-b border-gray-800">
+            <th class="text-left py-2 w-10">#</th>
+            <th class="text-left py-2">Domain</th>
+            <th class="text-left py-2">Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rankings %}
+          <tr class="border-b border-gray-800/30 {% if r.is_ai_overview %}bg-purple-900/20{% endif %}">
+            <td class="py-1.5">
+              {% if r.is_ai_overview %}
+              <span class="text-purple-400 text-xs font-bold">AI</span>
+              {% else %}
+              <span class="{% if r.position <= 3 %}text-emerald-400{% else %}text-gray-400{% endif %}">{{ r.position }}</span>
+              {% endif %}
+            </td>
+            <td class="py-1.5 text-gray-300">{{ r.domain }}</td>
+            <td class="py-1.5 text-gray-400 truncate max-w-xs">{{ r.title }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <h2 class="font-semibold mb-3">People Also Ask</h2>
+      {% if paa %}
+      <div class="space-y-2 text-sm">
+        {% for q in paa[:8] %}
+        <div class="border-l-2 border-emerald-600/50 pl-2">
+          <a href="{{ q.link }}" target="_blank" class="text-emerald-400 hover:underline text-xs">{{ q.question }}</a>
+           {% if q.snippet %}<p class="text-gray-500 text-xs mt-0.5">{{ q.snippet[:80] }}{% if q.snippet|length > 80 %}…{% endif %}</p>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-500 text-xs py-4 text-center">No PAA questions found yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<script>
+const ctx = document.getElementById('rankChart').getContext('2d');
+const history = {{ history | tojson }};
+
+const domains = new Set();
+history.forEach(h => h.top10?.forEach(e => domains.add(e.domain)));
+const colors = ['#34d399','#60a5fa','#f472b6','#fbbf24','#a78bfa','#fb923c','#f87171','#2dd4bf','#e879f9','#facc15'];
+
+const datasets = [];
+domains.forEach((d, i) => {
+  const points = [];
+  history.forEach(h => {
+    const found = h.top10?.find(e => e.domain === d);
+    if (found) points.push({x: h.ts.slice(0,10), y: found.position});
+  });
+  if (points.length > 0) {
+    datasets.push({
+      label: d,
+      data: points,
+      borderColor: colors[i % colors.length],
+      backgroundColor: colors[i % colors.length] + '33',
+      tension: 0.2,
+      pointRadius: 3,
+    });
+  }
+});
+
+new Chart(ctx, {
+  type: 'line',
+  data: { datasets },
+  options: {
+    responsive: true,
+    scales: {
+      y: { reverse: true, min: 1, max: 20, ticks: { stepSize: 1, color: '#6b7280' }, grid: { color: '#1f2937' } },
+      x: { ticks: { color: '#6b7280' }, grid: { color: '#1f2937' } }
+    },
+    plugins: {
+      legend: { labels: { color: '#9ca3af', boxWidth: 12, padding: 8, font: { size: 10 } } }
+    }
+  }
+});
+</script>
+
+{% endblock %}

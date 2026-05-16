@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8002:8000"
+    volumes:
+      - ./serp_history.db:/app/serp_history.db
+    environment:
+      - SERPAPI_KEY=${SERPAPI_KEY}
+      - TRACK_INTERVAL_HOURS=${TRACK_INTERVAL_HOURS:-24}
+    restart: unless-stopped

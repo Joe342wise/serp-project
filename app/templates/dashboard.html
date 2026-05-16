@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %} — Dashboard{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-4 gap-4 mb-8">
+  <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div class="text-gray-400 text-xs uppercase tracking-wide">Keywords</div>
+    <div class="text-3xl font-bold text-emerald-400">{{ stats.keyword_count }}</div>
+  </div>
+  <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div class="text-gray-400 text-xs uppercase tracking-wide">Snapshots</div>
+    <div class="text-3xl font-bold text-blue-400">{{ stats.snapshot_count }}</div>
+  </div>
+  <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div class="text-gray-400 text-xs uppercase tracking-wide">AI Overviews</div>
+    <div class="text-3xl font-bold text-purple-400">{{ stats.ai_overview_count }}</div>
+  </div>
+  <div class="bg-gray-900 rounded-xl p-4 border border-gray-800">
+    <div class="text-gray-400 text-xs uppercase tracking-wide">Alerts</div>
+    <div class="text-3xl font-bold text-amber-400">{{ stats.alert_count }}</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-3 gap-6">
+  <div class="col-span-2">
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-semibold">Tracked Keywords</h2>
+        <form action="/track/all" method="post" onsubmit="event.preventDefault(); fetch(this.action,{method:'POST'}).then(r=>r.json()).then(()=>location.reload())">
+          <button class="text-xs bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg transition">Track All Now</button>
+        </form>
+      </div>
+      {% if keywords %}
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-gray-400 border-b border-gray-800">
+              <th class="text-left py-2">Keyword</th>
+              <th class="text-left py-2">Top Result</th>
+              <th class="text-right py-2">Snapshots</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for kw in keywords %}
+            <tr class="border-b border-gray-800/50 hover:bg-gray-800/30">
+              <td class="py-2"><a href="/keyword/{{ kw.keyword | urlencode }}" class="text-emerald-400 hover:underline">{{ kw.keyword }}</a></td>
+              <td class="py-2">
+                {% set r = latest_rankings.get(kw.keyword, []) %}
+                {% if r %}
+                  <span class="text-gray-300">{{ r[0].domain }}</span>
+                  <span class="text-gray-500 ml-1">(#{{ r[0].position }})</span>
+                {% else %}
+                  <span class="text-gray-600">—</span>
+                {% endif %}
+              </td>
+              <td class="py-2 text-right text-gray-500">{{ r | length if r else 0 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-gray-500 text-sm py-8 text-center">No keywords tracked yet. <a href="/settings" class="text-emerald-400 hover:underline">Add some in Settings.</a></p>
+      {% endif %}
+    </div>
+  </div>
+
+  <div>
+    <div class="bg-gray-900 rounded-xl border border-gray-800 p-4">
+      <h2 class="font-semibold mb-3">Recent Alerts</h2>
+      {% if alerts %}
+      <div class="space-y-2">
+        {% for a in alerts %}
+        <div class="text-xs border-l-2 
+          {% if a.alert_type == 'volatility' %}border-amber-500
+          {% elif a.alert_type == 'ai_overview' %}border-purple-500
+          {% elif a.alert_type == 'cannibalization' %}border-red-500
+          {% else %}border-gray-600{% endif %} pl-2">
+          <span class="text-gray-400">{{ a.ts[:10] }}</span>
+          <span class="text-gray-200">{{ a.message }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-500 text-xs py-6 text-center">No alerts yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
